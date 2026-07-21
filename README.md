@@ -1,1 +1,3 @@
-# study-mate-bot
+# StudyMate
+
+PDF fayllar asosida savol-javob beruvchi Telegram bot
