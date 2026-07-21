@@ -4,6 +4,7 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
 import os
+from groq import Groq
 
 # Global o'zgaruvchilar - bir marta yuklanadi va butun dastur davomida ishlatiladi
 
@@ -14,6 +15,10 @@ embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 # ChromaDB client - vektorli ma'lumotlar bazasiga ulanish uchun
 # "./chroma_db" papkasida ma'lumotlar doimiy saqlanadi (persistent)
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
+
+# Groq client - LLM (Large Language Model) orqali javob generatsiya qilish uchun
+# API kalit .env fayldan olinadi
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def get_or_create_collection(user_id: int):
@@ -127,3 +132,50 @@ def search_relevant_chunks(user_id: int, query: str, top_k: int = 3) -> list:
         })
     
     return relevant_chunks
+
+
+def generate_answer(query: str, relevant_chunks: list) -> str:
+    """
+    Topilgan kontekst (relevant_chunks) asosida foydalanuvchi savoliga javob generatsiya qiladi.
+    Groq API orqali LLM (Llama-3.3-70b) modelidan foydalanadi.
+
+    :param query: Foydalanuvchining savoli
+    :param relevant_chunks: Qidiruv natijasida topilgan kontekst parchalari ro'yxati
+    :return: Generatsiya qilingan javob (string)
+    """
+    # 1. Barcha chunk'larni birlashtiramiz, har biriga manba nomini qo'shib
+    context_parts = []
+    for chunk in relevant_chunks:
+        text = chunk.get("text", "")
+        source = chunk.get("source", "noma'lum")
+        # Har bir chunk'ni "[fayl_nomi]: matn" formatida qo'shamiz
+        context_parts.append(f"[{source}]: {text}")
+    
+    # Barcha kontekstlarni bitta matnga birlashtiramiz
+    context_text = "\n\n".join(context_parts)
+    
+    # 2. Prompt tuzamiz - LLM ga aniq ko'rsatma beramiz
+    system_prompt = """Siz yordamchi assistantsiz. Faqat berilgan kontekst (matn) asosida javob bering.
+Agar javob kontekstda topilmasa, aniq "Bu ma'lumot faylda topilmadi" deb ayting.
+O'zbek tilida javob bering."""
+
+    user_prompt = f"""Kontekst:
+{context_text}
+
+Foydalanuvchi savoli: {query}
+
+Yuqoridagi kontekst asosida savolga javob bering."""
+
+    # 3. Groq API ga so'rov yuboramiz
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",  # Ishlatiladigan LLM modeli
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.3,  # Past qiymat - aniq va faktik javoblar uchun
+    )
+    
+    # 4. Javobni qaytaramiz
+    answer = response.choices[0].message.content
+    return answer
