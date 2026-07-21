@@ -1,5 +1,5 @@
-```gitignore
-# Python
+```
+# Dependencies
 __pycache__/
 *.pyc
 *.pyo
@@ -9,33 +9,35 @@ env/
 venv/
 .venv/
 .ENV
-.env
-.env.local
-.env.*
 .venv.bak/
-.python-version
-
-# Logs
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-
-# IDE
+*.pot
+*.pyc
+*.pyo
+*.pyd
+.MF
+.tags*
+.TAGS*
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.instance/
+.pydevproject
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-
-# OS
+*~
 .DS_Store
 Thumbs.db
-
-# Coverage
-.coverage
-htmlcov/
-coverage/
-
-# Build
-build/
-dist/
-*.egg-info/
 ```
