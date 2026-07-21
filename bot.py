@@ -1,6 +1,10 @@
+from dotenv import load_dotenv
+
+# .env faylni yuklash - BU ENG BIRINCHI AMALGA OSHIRILISHI KERAK
+load_dotenv()
+
 import asyncio
 import os
-from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
@@ -14,9 +18,6 @@ from pdf_processor import extract_text_from_pdf, split_into_chunks
 
 # rag_engine.py dan funksiyalarni import qilamiz
 from rag_engine import add_document, search_relevant_chunks, generate_answer, generate_quiz, generate_summary
-
-# .env fayldan o'zgaruvchilarni yuklaymiz
-load_dotenv()
 
 # Bot va Dispatcher yaratamiz
 bot = Bot(token=os.getenv("BOT_TOKEN"))

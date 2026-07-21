@@ -5,6 +5,10 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 import os
 from groq import Groq
+from dotenv import load_dotenv
+
+# .env faylni yuklash - bu barcha os.getenv() chaqiruvlaridan oldin bo'lishi shart
+load_dotenv()
 
 # Global o'zgaruvchilar - bir marta yuklanadi va butun dastur davomida ishlatiladi
 
