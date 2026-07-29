@@ -37,50 +37,41 @@ def extract_text_from_pdf(file_path: str) -> str:
     return "\n\n".join(pages_text)
 
 
-def split_into_chunks(text: str, chunk_size: int = 500, overlap: int = 50) -> list:
+def split_into_chunks(text: str, max_chunk_size: int = 300, min_chunk_size: int = 50) -> list:
     """
-    Matnni kichik bo'laklarga (chunk'larga) ajratadi.
-    
-    Bu funksiya RAG (Retrieval Augmented Generation) tizimi uchun muhim,
-    chunki katta matnni birdaniga emas, balki kichik qismlarga bo'lib
-    vektor bazasiga saqlaymiz va qidiramiz.
-    
-    Args:
-        text (str): Bo'laklarga ajratiladigan matn
-        chunk_size (int): Har bir bo'lakdagi so'zlar soni (default: 500)
-        overlap (int): Qo'shni bo'laklar orasidagi umumiy so'zlar soni (default: 50)
-                      Bu ma'no uzilib qolmasligi uchun kerak
-        
-    Returns:
-        list: Matn bo'laklarining ro'yxati
+    Matnni paragraflar chegarasidan hurmat qilib bo'laklarga bo'ladi.
+    So'zlar o'rtasida emas, balki paragraf (bo'sh qator) chegarasida kesadi,
+    shunda ta'rif yoki fikr bo'linib qolmaydi.
     """
-    # Matnni so'zlarga ajratamiz (bo'sh joy bo'yicha)
-    words = text.split()
+    # Matnni paragraflarga ajratamiz (bo'sh qator orqali)
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
     
-    # Agar matn juda qisqa bo'lsa, uni bitta chunk qilib qaytaramiz
-    if len(words) <= chunk_size:
-        return [text]
-    
-    # Bo'laklarni saqlash uchun bo'sh ro'yxat
     chunks = []
+    current_chunk = ""
     
-    # Matnni bo'laklarga ajratish tsikli
-    # start_index - har bir yangi bo'lak qayerdan boshlanishini ko'rsatadi
-    # Har bir iteratsiyada start_index (chunk_size - overlap) ga oshadi
-    # Masalan: chunk_size=500, overlap=50 bo'lsa, har safar 450 ta so'zga siljiymiz
-    for i in range(0, len(words), chunk_size - overlap):
-        # Joriy bo'lak uchun so'zlarni olamiz
-        # words[i : i + chunk_size] - i indeksdan boshlab chunk_size ta so'zni oladi
-        chunk_words = words[i : i + chunk_size]
+    for para in paragraphs:
+        # Agar joriy chunk + yangi paragraf max_chunk_size dan oshsa
+        word_count = len((current_chunk + " " + para).split())
         
-        # So'zlarni qayta stringga aylantiramiz
-        chunk_text = " ".join(chunk_words)
+        if word_count > max_chunk_size and len(current_chunk.split()) >= min_chunk_size:
+            # Joriy chunkni saqlaymiz, yangisini boshlaymiz
+            chunks.append(current_chunk.strip())
+            current_chunk = para
+        else:
+            # Joriy chunkga qo'shamiz
+            current_chunk = (current_chunk + "\n\n" + para).strip() if current_chunk else para
         
-        # Tayyor bo'lakni ro'yxatga qo'shamiz
-        chunks.append(chunk_text)
-        
-        # Agar oxirgi so'zgacha yetib borsak, tsiklni to'xtatamiz
-        if i + chunk_size >= len(words):
-            break
+        # Agar bitta paragrafning o'zi juda uzun bo'lsa (masalan max_chunk_size dan 2 barobar katta),
+        # uni alohida so'zlar bo'yicha bo'lamiz
+        if len(para.split()) > max_chunk_size * 2:
+            words = para.split()
+            for i in range(0, len(words), max_chunk_size):
+                sub_chunk = " ".join(words[i:i + max_chunk_size])
+                chunks.append(sub_chunk)
+            current_chunk = ""
+    
+    # Oxirgi qolgan chunkni ham qo'shamiz
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
     
     return chunks
