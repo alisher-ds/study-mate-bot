@@ -4,3 +4,4 @@ sentence-transformers
 groq
 pypdf
 python-dotenv
+rank_bm25
