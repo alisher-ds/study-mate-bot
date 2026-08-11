@@ -1,7 +1,5 @@
 """PDF text extraction and chunking utilities."""
 
-from pathlib import Path
-
 from pypdf import PdfReader
 
 
@@ -45,7 +43,6 @@ def split_into_chunks(text: str, max_chunk_size: int = 300, min_chunk_size: int 
         if not words:
             continue
 
-        # A very long paragraph is split directly, so no text is lost.
         if len(words) > max_chunk_size:
             flush()
             for start in range(0, len(words), max_chunk_size):
