@@ -1,77 +1,64 @@
-"""
-PDF fayllar bilan ishlash uchun modul.
-Bu modul PDF fayllardan matn o'qish va uni kichik bo'laklarga (chunk'larga) ajratish funksiyalarini o'z ichiga oladi.
-"""
+"""PDF text extraction and chunking utilities."""
+
+from pathlib import Path
 
 from pypdf import PdfReader
 
 
 def extract_text_from_pdf(file_path: str) -> str:
-    """
-    PDF fayldan matnni chiqarib oladi.
-    
-    Args:
-        file_path (str): PDF faylning yo'li
-        
-    Returns:
-        str: Barcha sahifalardan olingan matn, har bir sahifa oldida "[SAHIFA N]" belgisi bilan
-    """
-    # PdfReader obyekti orqali PDF faylni ochamiz
+    """Extract text from every page while preserving page markers."""
     reader = PdfReader(file_path)
-    
-    # Natijaviy matnni saqlash uchun bo'sh ro'yxat
-    pages_text = []
-    
-    # Har bir sahifani aylanib chiqamiz
-    # enumerate() funksiyasi indeks (sahifa raqami) va qiymat (sahifa obyekti) beradi
+    if reader.is_encrypted:
+        raise ValueError("Bu PDF parol bilan himoyalangan va o'qib bo'lmaydi.")
+
+    pages = []
     for page_num, page in enumerate(reader.pages, start=1):
-        # Sahifadan matnni chiqaramiz
-        text = page.extract_text()
-        
-        # Har bir sahifa oldiga "[SAHIFA N]" belgisini qo'shamiz
-        # Bu keyinchalik javob berganda manbani ko'rsatish uchun kerak
-        pages_text.append(f"[SAHIFA {page_num}]\n{text}")
-    
-    # Barcha sahifalarni bitta string qilib birlashtiramiz
-    # "\n\n" bilan ajratamiz, shunda sahifalar aniq ajralib turadi
-    return "\n\n".join(pages_text)
+        text = (page.extract_text() or "").strip()
+        if text:
+            pages.append(f"[SAHIFA {page_num}]\n{text}")
+
+    result = "\n\n".join(pages).strip()
+    if not result:
+        raise ValueError("PDF ichidan matn topilmadi. Bu skanerlangan yoki rasmli PDF bo'lishi mumkin.")
+    return result
 
 
-def split_into_chunks(text: str, max_chunk_size: int = 300, min_chunk_size: int = 50) -> list:
-    """
-    Matnni paragraflar chegarasidan hurmat qilib bo'laklarga bo'ladi.
-    So'zlar o'rtasida emas, balki paragraf (bo'sh qator) chegarasida kesadi,
-    shunda ta'rif yoki fikr bo'linib qolmaydi.
-    """
-    # Matnni paragraflarga ajratamiz (bo'sh qator orqali)
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-    
-    chunks = []
-    current_chunk = ""
-    
-    for para in paragraphs:
-        # Agar joriy chunk + yangi paragraf max_chunk_size dan oshsa
-        word_count = len((current_chunk + " " + para).split())
-        
-        if word_count > max_chunk_size and len(current_chunk.split()) >= min_chunk_size:
-            # Joriy chunkni saqlaymiz, yangisini boshlaymiz
-            chunks.append(current_chunk.strip())
-            current_chunk = para
-        else:
-            # Joriy chunkga qo'shamiz
-            current_chunk = (current_chunk + "\n\n" + para).strip() if current_chunk else para
-        
-        # Agar bitta paragrafning o'zi juda uzun bo'lsa (masalan max_chunk_size dan 2 barobar katta),
-        # uni alohida so'zlar bo'yicha bo'lamiz
-        if len(para.split()) > max_chunk_size * 2:
-            words = para.split()
-            for i in range(0, len(words), max_chunk_size):
-                sub_chunk = " ".join(words[i:i + max_chunk_size])
-                chunks.append(sub_chunk)
-            current_chunk = ""
-    
-    # Oxirgi qolgan chunkni ham qo'shamiz
-    if current_chunk.strip():
-        chunks.append(current_chunk.strip())
-    
+def split_into_chunks(text: str, max_chunk_size: int = 300, min_chunk_size: int = 50) -> list[str]:
+    """Split text into bounded word-based chunks without dropping content."""
+    if not text or max_chunk_size <= 0 or min_chunk_size < 0:
+        return []
+
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks: list[str] = []
+    current: list[str] = []
+    current_words = 0
+
+    def flush() -> None:
+        nonlocal current, current_words
+        if current:
+            chunks.append("\n\n".join(current).strip())
+            current = []
+            current_words = 0
+
+    for paragraph in paragraphs:
+        words = paragraph.split()
+        if not words:
+            continue
+
+        # A very long paragraph is split directly, so no text is lost.
+        if len(words) > max_chunk_size:
+            flush()
+            for start in range(0, len(words), max_chunk_size):
+                piece = " ".join(words[start:start + max_chunk_size]).strip()
+                if piece:
+                    chunks.append(piece)
+            continue
+
+        if current_words + len(words) > max_chunk_size and current_words >= min_chunk_size:
+            flush()
+
+        current.append(paragraph)
+        current_words += len(words)
+
+    flush()
     return chunks
