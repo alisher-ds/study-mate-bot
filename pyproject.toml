@@ -5,3 +5,4 @@ exclude = [".venv", "venv", "chroma_db"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
