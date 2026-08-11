@@ -13,7 +13,13 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemo
 from config import MAX_PDF_SIZE_MB
 from database import add_user, get_user
 from document_processor import SUPPORTED_EXTENSIONS, extract_text, split_into_chunks
-from rag_engine import add_document, generate_answer, generate_quiz, generate_summary, search_relevant_chunks
+from rag_engine import (
+    add_document,
+    generate_answer,
+    generate_quiz,
+    generate_summary,
+    search_relevant_chunks,
+)
 
 router = Router()
 logger = logging.getLogger(__name__)
