@@ -5,10 +5,10 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from openpyxl import load_workbook
-from pypdf import PdfReader
 from docx import Document
+from openpyxl import load_workbook
 from pptx import Presentation
+from pypdf import PdfReader
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".xlsx", ".txt", ".csv"}
 
@@ -17,7 +17,8 @@ def extract_text(file_path: str) -> str:
     path = Path(file_path)
     suffix = path.suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
-        raise ValueError(f"Qo'llab-quvvatlanmaydigan format: {suffix or 'noma'lum'}")
+        display_suffix = suffix or "noma'lum"
+        raise ValueError(f"Qo'llab-quvvatlanmaydigan format: {display_suffix}")
     if suffix == ".pdf":
         return _pdf(path)
     if suffix == ".docx":
