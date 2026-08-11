@@ -1,5 +1,6 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
+
 from config import DB_NAME
 
 
@@ -25,7 +26,7 @@ def add_user(user_id: int, ism: str, telefon: str, shahar: str):
     cursor.execute("""
         INSERT OR REPLACE INTO users (user_id, ism, telefon, shahar, registered_at)
         VALUES (?, ?, ?, ?, ?)
-    """, (user_id, ism, telefon, shahar, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    """, (user_id, ism, telefon, shahar, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")))
     conn.commit()
     conn.close()
 
