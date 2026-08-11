@@ -1,7 +1,6 @@
-aiogram
-chromadb
-sentence-transformers
-groq
-pypdf
-python-dotenv
-rank_bm25
+aiogram==3.13.1
+python-dotenv==1.0.1
+pypdf==4.3.1
+chromadb==0.5.5
+sentence-transformers==3.0.1
+groq==0.11.0
