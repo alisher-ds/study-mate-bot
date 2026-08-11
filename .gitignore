@@ -1,42 +1,43 @@
-```
-# Compiled and build artifacts
+# Python
 *.pyc
 __pycache__/
+*.pyo
+*.pyd
+*.so
+*.egg-info/
 
-# Dependencies
+# Virtual environments
 .venv/
 venv/
-pip-wheel-metadata/
 
-# Logs and temp files
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+users.db
+users.db-*
+chroma_db/
+temp_*.pdf
+
+# Logs and temporary files
 *.log
 *.tmp
 *.swp
-
-# Environment
-.env
-.env.local
-*.env.*
 
 # Editors
 .vscode/
 .idea/
 
-# Coverage
+# Coverage / build
 .coverage
 coverage/
 htmlcov/
-
-# Python specific
-*.pyo
-*.pyd
-*.so
-*.egg-info/
 dist/
 build/
 *.egg
 
-# System files
+# OS
 .DS_Store
 Thumbs.db
-```
