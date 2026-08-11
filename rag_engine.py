@@ -4,7 +4,8 @@ from functools import lru_cache
 import chromadb
 from groq import Groq
 from sentence_transformers import SentenceTransformer
-from config import GROQ_API_KEY, AI_MODEL, CHROMA_PATH
+
+from config import AI_MODEL, CHROMA_PATH, GROQ_API_KEY
 
 
 @lru_cache(maxsize=1)
