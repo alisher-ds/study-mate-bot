@@ -9,155 +9,53 @@ from sentence_transformers import SentenceTransformer
 import os
 from groq import Groq
 
-# Global o'zgaruvchilar - bir marta yuklanadi va butun dastur davomida ishlatiladi
-
-# Embedding modeli - matnni vektorlarga aylantirish uchun
-# 'paraphrase-multilingual-MiniLM-L12-v2' ko'p tillarni, jumladan o'zbekchani ham qo'llab-quvvatlaydi
 embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-
-# ChromaDB client - vektorli ma'lumotlar bazasiga ulanish uchun
-# "./chroma_db" papkasida ma'lumotlar doimiy saqlanadi (persistent)
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
-
-# Groq client - LLM (Large Language Model) orqali javob generatsiya qilish uchun
-# API kalit .env fayldan olinadi
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def get_or_create_collection(user_id: int):
-    """
-    Har bir foydalanuvchi uchun alohida ChromaDB collection yaratadi yoki mavjudini qaytaradi.
-    Collection nomi "user_{user_id}" formatida bo'ladi, shu orqali har bir foydalanuvchining
-    ma'lumotlari ajratilgan holda saqlanadi.
-
-    :param user_id: Telegram foydalanuvchisining unikal ID raqami
-    :return: ChromaDB collection obyekti
-    """
-    # Collection nomini shakllantiramiz
     collection_name = f"user_{user_id}"
-    
-    # Agar collection mavjud bo'lsa, uni olamiz, yo'q bo'lsa yangisini yaratamiz
-    # get_or_create_collection metodi avtomatik ravishda tekshirib beradi
-    collection = chroma_client.get_or_create_collection(name=collection_name)
-    
-    return collection
+    return chroma_client.get_or_create_collection(name=collection_name)
 
 
 def add_document(user_id: int, chunks: list, doc_name: str):
-    """
-    Matn bo'laklarini (chunks) vektorlarga aylantirib, ChromaDB ga qo'shadi.
-    Har bir chunk uchun unikal ID va metadata yaratiladi.
-
-    :param user_id: Telegram foydalanuvchisining ID raqami
-    :param chunks: Matndan ajratilgan bo'laklar ro'yxati (har biri string)
-    :param doc_name: Hujjat nomi (manba sifatida ishlatiladi)
-    """
-    # Foydalanuvchi uchun collection ni olamiz yoki yaratamiz
     collection = get_or_create_collection(user_id)
-    
-    # Agar chunks bo'sh bo'lsa, hech narsa qilmaslik
     if not chunks:
         return
-    
-    # Har bir chunk uchun ID, embedding va metadata tayyorlaymiz
-    ids = []
-    embeddings = []
-    metadatas = []
-    
+    ids, embeddings, metadatas = [], [], []
     for index, chunk in enumerate(chunks):
-        # Har bir chunk uchun unikal ID yaratamiz: "{hujjat_nomi}_{indeks}"
-        chunk_id = f"{doc_name}_{index}"
-        ids.append(chunk_id)
-        
-        # Chunk matnini vektorga aylantiramiz (embedding)
-        # embedding_model.encode() matnni vektorga o'giradi
-        embedding = embedding_model.encode(chunk)
-        embeddings.append(embedding.tolist())  # NumPy array ni list ga o'tkazamiz
-        
-        # Metadata - qo'shimcha ma'lumotlar (manba va indeks)
-        metadata = {
-            "source": doc_name,      # Qaysi fayldan olinganligi
-            "chunk_index": index     # Chunk tartib raqami
-        }
-        metadatas.append(metadata)
-    
-    # Barcha ma'lumotlarni ChromaDB collection ga qo'shamiz
-    collection.add(
-        ids=ids,
-        embeddings=embeddings,
-        metadatas=metadatas,
-        documents=chunks  # Asl matn ham saqlanadi (ixtiyoriy, lekin foydali)
-    )
+        ids.append(f"{doc_name}_{index}")
+        embeddings.append(embedding_model.encode(chunk).tolist())
+        metadatas.append({"source": doc_name, "chunk_index": index})
+    collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas, documents=chunks)
 
 
 def search_relevant_chunks(user_id: int, query: str, top_k: int = 3) -> list:
-    """
-    Foydalanuvchi savoliga eng mos keladigan chunk'larni qidiradi.
-    Savolni vektorga aylantirib, ChromaDB dan eng yaqin vektorlarni topadi.
-
-    :param user_id: Telegram foydalanuvchisining ID raqami
-    :param query: Foydalanuvchining savoli (string)
-    :param top_k: Qancha ta eng mos natijani qaytarish kerakligi (default: 3)
-    :return: [{"text": chunk_matni, "source": manba_nomi}, ...] formatidagi ro'yxat
-    """
-    # Foydalanuvchi collection ini olamiz
     collection = get_or_create_collection(user_id)
-    
-    # Savolni vektorga aylantiramiz (embedding)
     query_embedding = embedding_model.encode(query)
-    
-    # ChromaDB dan eng mos top_k ta chunk'ni qidiramiz
-    # query_embeddings - qidiruv vektori
-    # n_results - qancha natija qaytarish kerakligi
-    # include=["documents", "metadatas"] - matn va metadata'larni qaytarish
     results = collection.query(
         query_embeddings=[query_embedding.tolist()],
         n_results=top_k,
         include=["documents", "metadatas"]
     )
-    
-    # Natijalarni qulay formatga o'tkazamiz
     relevant_chunks = []
-    
-    # results['documents'][0] - topilgan chunk matnlari ro'yxati
-    # results['metadatas'][0] - har bir chunk uchun metadata ro'yxati
     documents = results['documents'][0] if results['documents'] else []
     metadatas = results['metadatas'][0] if results['metadatas'] else []
-    
-    # Har bir natijani {"text": ..., "source": ...} formatiga keltiramiz
     for i, doc in enumerate(documents):
         metadata = metadatas[i] if i < len(metadatas) else {}
-        source = metadata.get("source", "noma'lum")  # Agar source bo'lmasa, "noma'lum" deb yozamiz
-        
-        relevant_chunks.append({
-            "text": doc,
-            "source": source
-        })
-    
+        relevant_chunks.append({"text": doc, "source": metadata.get("source", "noma'lum")})
     return relevant_chunks
 
 
 def generate_answer(query: str, relevant_chunks: list) -> str:
-    """
-    Topilgan kontekst (relevant_chunks) asosida foydalanuvchi savoliga javob generatsiya qiladi.
-    Groq API orqali LLM (Llama-3.3-70b) modelidan foydalanadi.
-
-    :param query: Foydalanuvchining savoli
-    :param relevant_chunks: Qidiruv natijasida topilgan kontekst parchalari ro'yxati
-    :return: Generatsiya qilingan javob (string)
-    """
-    # 1. Barcha chunk'larni birlashtiramiz, har biriga manba nomini qo'shib
     context_parts = []
     for chunk in relevant_chunks:
         text = chunk.get("text", "")
         source = chunk.get("source", "noma'lum")
-        # Har bir chunk'ni "[fayl_nomi]: matn" formatida qo'shamiz
         context_parts.append(f"[{source}]: {text}")
-    
-    # Barcha kontekstlarni bitta matnga birlashtiramiz
     context_text = "\n\n".join(context_parts)
-    
-    # 2. Prompt tuzamiz - LLM ga aniq ko'rsatma beramiz
+
     system_prompt = """Siz yordamchi assistantsiz. Faqat berilgan kontekst (matn) asosida javob bering.
 Agar javob kontekstda topilmasa, aniq "Bu ma'lumot faylda topilmadi" deb ayting.
 O'zbek tilida javob bering."""
@@ -169,14 +67,50 @@ Foydalanuvchi savoli: {query}
 
 Yuqoridagi kontekst asosida savolga javob bering."""
 
-    # 3. Groq API ga so'rov yuboramiz
     response = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",  # Ishlatiladigan LLM modeli
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        temperature=0.3,  # Past qiymat - aniq va faktik javoblar uchun
+        temperature=0.3,
+    )
+    return response.choices[0].message.content
+
+
+def generate_quiz(user_id: int, num_questions: int = 5) -> str:
+    collection = get_or_create_collection(user_id)
+    all_data = collection.get()
+    documents = all_data.get('documents', [])
+    sample_text = " ".join(documents[:10])
+
+    prompt = f"""Quyidagi matn asosida {num_questions} ta test savoli tuz, har biri 4 variantli (a,b,c,d), to'g'ri javobni ko'rsatib. O'zbek tilida yoz.
+
+MATN:
+{sample_text[:3000]}
+"""
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.5
+    )
+    return response.choices[0].message.content
+
+
+def generate_summary(user_id: int) -> str:
+    collection = get_or_create_collection(user_id)
+    all_data = collection.get()
+    documents = all_data.get('documents', [])
+    full_text = " ".join(documents)
+
+    prompt = f"""Quyidagi matnni 5-7 ta asosiy fikr bilan qisqacha xulosala, o'zbek tilida:
+
+{full_text[:4000]}
+"""
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
     )
     
     # 4. Javobni qaytaramiz
