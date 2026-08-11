@@ -26,13 +26,13 @@ jobs:
       - name: Install quality-test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff pytest pypdf python-dotenv
+          pip install ruff pytest pypdf python-dotenv python-docx python-pptx openpyxl
 
       - name: Lint
         run: ruff check .
 
       - name: Compile check
-        run: python -m compileall -q bot.py config.py database.py handlers.py pdf_processor.py rag_engine.py tests
+        run: python -m compileall -q bot.py config.py database.py document_processor.py handlers.py pdf_processor.py rag_engine.py tests
 
       - name: Tests
         run: pytest -q
