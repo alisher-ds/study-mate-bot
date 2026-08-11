@@ -1,30 +1,30 @@
-"""
-bot.py — StudyMate botning asosiy fayli.
-Barcha handler'larni ulaydi va botni ishga tushiradi.
-"""
+"""StudyMate Telegram bot entry point."""
+
 import asyncio
 import logging
+
 from aiogram import Bot, Dispatcher
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, validate_config
 from handlers import router
 
-# Log sozlamalari
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 
 
-async def main():
-    # Bot va Dispatcher ni yaratamiz
+async def main() -> None:
+    validate_config()
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
-
-    # Handler'larni ulaymiz (handlers.py dan)
     dp.include_router(router)
-
-    print("🚀 StudyMate bot ishga tushdi!")
-    # Polling — yangi xabarlarni kutish
-    await dp.start_polling(bot)
+    logging.info("StudyMate bot ishga tushdi")
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logging.info("StudyMate bot to'xtatildi")
