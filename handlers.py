@@ -1,20 +1,28 @@
 import asyncio
+import logging
 import os
 import tempfile
 from pathlib import Path
 
-from aiogram import Router, F, types
+from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from config import MAX_PDF_SIZE_MB
 from database import add_user, get_user
 from pdf_processor import extract_text_from_pdf, split_into_chunks
-from rag_engine import add_document, search_relevant_chunks, generate_answer, generate_quiz, generate_summary
+from rag_engine import (
+    add_document,
+    generate_answer,
+    generate_quiz,
+    generate_summary,
+    search_relevant_chunks,
+)
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 class Registration(StatesGroup):
@@ -100,7 +108,8 @@ async def handle_pdf(message: types.Message):
             await message.answer("ℹ️ Bu PDF allaqachon yuklangan yoki undan yangi ma'lumot topilmadi.")
             return
         await message.answer(f"✅ PDF tayyor! {inserted} ta parcha indekslandi. Endi savol berishingiz mumkin.")
-    except Exception:
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.exception("PDF processing failed: %s", exc)
         await message.answer("❌ PDF'ni qayta ishlashda xatolik yuz berdi. Faylni tekshirib, qayta urinib ko'ring.")
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -113,7 +122,8 @@ async def cmd_test(message: types.Message):
     try:
         result = await asyncio.to_thread(generate_quiz, message.from_user.id)
         await message.answer(result)
-    except Exception:
+    except (RuntimeError, ValueError, OSError) as exc:
+        logger.exception("Quiz generation failed: %s", exc)
         await message.answer("❌ Test yaratishda xatolik yuz berdi. Keyinroq qayta urinib ko'ring.")
 
 
@@ -123,7 +133,8 @@ async def cmd_summary(message: types.Message):
     try:
         result = await asyncio.to_thread(generate_summary, message.from_user.id)
         await message.answer(result)
-    except Exception:
+    except (RuntimeError, ValueError, OSError) as exc:
+        logger.exception("Summary generation failed: %s", exc)
         await message.answer("❌ Xulosa yaratishda xatolik yuz berdi. Keyinroq qayta urinib ko'ring.")
 
 
@@ -139,5 +150,6 @@ async def handle_question(message: types.Message, state: FSMContext):
         chunks = await asyncio.to_thread(search_relevant_chunks, message.from_user.id, query)
         answer = await asyncio.to_thread(generate_answer, query, chunks)
         await message.answer(answer)
-    except Exception:
+    except (RuntimeError, ValueError, OSError) as exc:
+        logger.exception("Answer generation failed: %s", exc)
         await message.answer("❌ Javob tayyorlashda xatolik yuz berdi. Keyinroq qayta urinib ko'ring.")
