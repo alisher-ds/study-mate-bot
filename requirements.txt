@@ -1,6 +1,9 @@
 aiogram==3.13.1
 python-dotenv==1.0.1
 pypdf==4.3.1
+python-docx==1.1.2
+python-pptx==1.0.2
+openpyxl==3.1.5
 chromadb==0.5.5
 sentence-transformers==3.0.1
 groq==0.11.0
