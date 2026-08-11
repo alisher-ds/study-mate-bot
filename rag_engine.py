@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+# RAG (Retrieval Augmented Generation) tizimi uchun asosiy modul
+# Bu fayl vektorli qidiruv va ma'lumotlarni saqlash funksiyalarini bajaradi
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 import os
@@ -109,4 +112,111 @@ def generate_summary(user_id: int) -> str:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3
     )
-    return response.choices[0].message.content
+    
+    # 4. Javobni qaytaramiz
+    answer = response.choices[0].message.content
+    return answer
+
+
+def generate_quiz(user_id: int, num_questions: int = 5) -> str:
+    """
+    Foydalanuvchining yuklagan hujjatlari asosida test savollari generatsiya qiladi.
+    
+    Args:
+        user_id (int): Foydalanuvchi ID raqami
+        num_questions (int): Generatsiya qilinadigan savollar soni (default: 5)
+    
+    Returns:
+        str: Test savollari va javob variantlari matni
+    """
+    # Foydalanuvchining collection'ini olamiz
+    collection = get_or_create_collection(user_id)
+    
+    # Collection'dan barcha saqlangan chunk'larni olamiz (limit bilan)
+    # Katta hajmli ma'lumotlar uchun birinchi 10 ta chunk'ni namuna sifatida olamiz
+    results = collection.get(limit=10, include=["documents"])
+    
+    documents = results['documents']
+    
+    # Agar hech qanday ma'lumot bo'lmasa, xabar qaytaramiz
+    if not documents:
+        return "Hozircha test tuzish uchun yetarli ma'lumot yo'q."
+    
+    # Birinchi 10 ta chunk'ni birlashtiramiz
+    context_text = "\n\n".join(documents)
+    
+    # Groq uchun prompt tuzamiz
+    system_prompt = (
+        "Siz o'qituvchi yordamchisisiz. Sizga berilgan matn asosida test savollari tuzishingiz kerak. "
+        "Har bir savol 4 ta variantdan (a, b, c, d) iborat bo'lsin va to'g'ri javobni aniq ko'rsating. "
+        "Javoblarni o'zbek tilida yozing."
+    )
+    
+    user_prompt = (
+        f"Quyidagi matn asosida {num_questions} ta test savoli tuz:\n\n"
+        f"{context_text}"
+    )
+    
+    # Groq API ga so'rov yuboramiz
+    chat_completion = groq_client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        model="llama-3.3-70b-versatile",
+        temperature=0.5,  # Biroz kreativlik uchun o'rtacha temperatura
+    )
+    
+    return chat_completion.choices[0].message.content
+
+
+def generate_summary(user_id: int) -> str:
+    """
+    Foydalanuvchining yuklagan hujjatlari asosida qisqa xulosa (summary) tayyorlaydi.
+    
+    Args:
+        user_id (int): Foydalanuvchi ID raqami
+    
+    Returns:
+        str: Hujjatning 5-7 ta asosiy fikrdan iborat qisqacha xulosasi
+    """
+    # Foydalanuvchining collection'ini olamiz
+    collection = get_or_create_collection(user_id)
+    
+    # Collection'dan barcha mavjud chunk'larni olamiz
+    # Eslatma: limit=None deb barchasini olsak ham, xotira cheklovlari bo'lishi mumkin
+    results = collection.get(include=["documents"])
+    
+    documents = results['documents']
+    
+    # Agar hech qanday ma'lumot bo'lmasa, xabar qaytaramiz
+    if not documents:
+        return "Hozircha xulosa chiqarish uchun yetarli ma'lumot yo'q."
+    
+    # Barcha chunk'larni bitta matnga birlashtiramiz
+    full_text = "\n\n".join(documents)
+    
+    # Agar matn juda uzun bo'lsa (masalan, 4000 belgidan oshsa), kesib olamiz
+    # Bu token limitlaridan oshib ketmaslik uchun kerak
+    if len(full_text) > 4000:
+        full_text = full_text[:4000] + "..."
+    
+    # Groq uchun prompt tuzamiz
+    system_prompt = (
+        "Siz matn tahlilchisisiz. Sizga berilgan matnni o'qib, uning asosiy g'oyalarini ajratib oling. "
+        "Natijani 5-7 ta asosiy fikr ko'rinishida, o'zbek tilida qisqacha xulosa qilib bering."
+    )
+    
+    user_prompt = f"Quyidagi matnni qisqacha xulosala:\n\n{full_text}"
+    
+    # Groq API ga so'rov yuboramiz
+    chat_completion = groq_client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        model="llama-3.3-70b-versatile",
+        temperature=0.3,  # Aniq va faktik xulosa uchun past temperatura
+    )
+    
+    return chat_completion.choices[0].message.content
