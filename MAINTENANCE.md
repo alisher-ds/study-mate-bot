@@ -8,3 +8,4 @@
 - `rag_engine.py`: Vector search context retrieval and Groq LLM integration.
 - `database.py`: SQLite interaction for user state and logs.
 - Chroma vector embeddings are stored locally to minimize redundant reprocessing.
+- PDF chunk size is calibrated to balance context density and latency.
