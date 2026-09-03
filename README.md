@@ -51,3 +51,5 @@ StudyMate is a Telegram bot that allows users to upload documents (PDFs) and ask
 ## Troubleshooting
 
 - If Groq API rate limit is reached, the bot gracefully requests users to retry after a short cooldown.
+
+- **Multilingual Support**: Supports Uzbek, Russian, and English documents effortlessly.
