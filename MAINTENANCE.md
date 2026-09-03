@@ -13,3 +13,4 @@
 - PyMuPDF handles page-by-page text extraction with encoding fallbacks.
 - SQLite uses WAL mode to support seamless concurrent reads during document querying.
 - Cosine distance thresholds filter out noisy chunks before LLM prompting.
+- Temporary PDF files are cleared promptly after chunk ingestion.
