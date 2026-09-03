@@ -11,3 +11,4 @@
 - PDF chunk size is calibrated to balance context density and latency.
 
 - PyMuPDF handles page-by-page text extraction with encoding fallbacks.
+- SQLite uses WAL mode to support seamless concurrent reads during document querying.
