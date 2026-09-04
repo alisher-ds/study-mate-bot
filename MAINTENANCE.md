@@ -14,3 +14,5 @@
 - SQLite uses WAL mode to support seamless concurrent reads during document querying.
 - Cosine distance thresholds filter out noisy chunks before LLM prompting.
 - Temporary PDF files are cleared promptly after chunk ingestion.
+
+- Text extraction ignores page headers and footers using vertical bounding box heuristics.
