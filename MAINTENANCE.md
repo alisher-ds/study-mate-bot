@@ -16,3 +16,4 @@
 - Temporary PDF files are cleared promptly after chunk ingestion.
 
 - Text extraction ignores page headers and footers using vertical bounding box heuristics.
+- Embedding dimensions correspond directly to the selected sentence-transformers model.
