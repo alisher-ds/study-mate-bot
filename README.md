@@ -56,3 +56,4 @@ StudyMate is a Telegram bot that allows users to upload documents (PDFs) and ask
 - **Commands**: Standard commands /start, /help, and /reset are fully supported.
 
 - **Security**: Never commit .env files or expose your Telegram bot token.
+- **Encrypted PDFs**: Password-protected PDFs are rejected gracefully with a friendly prompt.
