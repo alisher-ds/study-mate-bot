@@ -19,3 +19,4 @@
 - Embedding dimensions correspond directly to the selected sentence-transformers model.
 - Idle user document sessions expire automatically after 24 hours of inactivity.
 - Chunk overlap of 15% is maintained to preserve boundary context across splits.
+- Foreign key pragma is enabled on each SQLite connection initialization.
