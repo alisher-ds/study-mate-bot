@@ -8,3 +8,4 @@
 - Rate limit backoff policy verified for Groq client calls
 - SQLite database integrity check: PRAGMA integrity_check passed
 - Semaphore concurrency limit: 5 parallel document extractions
+- Vector nearest-neighbor query latency: 12ms
