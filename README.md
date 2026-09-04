@@ -57,3 +57,4 @@ StudyMate is a Telegram bot that allows users to upload documents (PDFs) and ask
 
 - **Security**: Never commit .env files or expose your Telegram bot token.
 - **Encrypted PDFs**: Password-protected PDFs are rejected gracefully with a friendly prompt.
+- **File Size**: Uploads up to 20MB are supported via Telegram Bot API.
