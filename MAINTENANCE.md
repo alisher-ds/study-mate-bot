@@ -18,3 +18,4 @@
 - Text extraction ignores page headers and footers using vertical bounding box heuristics.
 - Embedding dimensions correspond directly to the selected sentence-transformers model.
 - Idle user document sessions expire automatically after 24 hours of inactivity.
+- Chunk overlap of 15% is maintained to preserve boundary context across splits.
