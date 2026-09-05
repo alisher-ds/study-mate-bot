@@ -26,3 +26,4 @@
 - PDF text extraction applies unicode normalization (NFC) to handle ligature artifacts.
 - Asynchronous database operations dispatch through dedicated worker thread pools.
 - Ingested document buffers are unlinked from filesystem in finally blocks.
+- Safety buffer of 1,000 tokens is reserved for completion response generation.
