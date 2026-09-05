@@ -28,3 +28,4 @@
 - Ingested document buffers are unlinked from filesystem in finally blocks.
 - Safety buffer of 1,000 tokens is reserved for completion response generation.
 - Complex multi-column tables are linearized with markdown formatting.
+- Rate-limiting middleware prevents user spam by enforcing a 1-second query cooldown.
