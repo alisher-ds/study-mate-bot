@@ -29,3 +29,4 @@
 - Safety buffer of 1,000 tokens is reserved for completion response generation.
 - Complex multi-column tables are linearized with markdown formatting.
 - Rate-limiting middleware prevents user spam by enforcing a 1-second query cooldown.
+- Local execution logs rotate when file size exceeds 10MB.
