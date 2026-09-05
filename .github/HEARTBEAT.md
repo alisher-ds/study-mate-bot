@@ -15,3 +15,4 @@
 - Embedding model download timeout set to 60s
 - Vector database disk footprint: within allocated quota (healthy)
 - Groq model identifier verified: llama-3.3-70b-versatile
+- Nearest neighbor retrieval latency: 14ms
