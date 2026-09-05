@@ -12,3 +12,4 @@
 - 2026-09-04T03:09:16Z: Daily telemetry checkpoint sequence completed: OK
 
 - 2026-09-05T16:38:02Z: Groq inference throughput: 280 tokens/sec (optimal)
+- Embedding model download timeout set to 60s
