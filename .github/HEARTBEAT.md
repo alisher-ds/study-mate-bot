@@ -13,3 +13,4 @@
 
 - 2026-09-05T16:38:02Z: Groq inference throughput: 280 tokens/sec (optimal)
 - Embedding model download timeout set to 60s
+- Vector database disk footprint: within allocated quota (healthy)
