@@ -24,3 +24,4 @@
 - Fallback prompt is used when context similarity score falls below relevance cutoff.
 
 - PDF text extraction applies unicode normalization (NFC) to handle ligature artifacts.
+- Asynchronous database operations dispatch through dedicated worker thread pools.
