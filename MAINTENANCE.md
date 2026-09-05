@@ -22,3 +22,5 @@
 - Foreign key pragma is enabled on each SQLite connection initialization.
 - SIGINT and SIGTERM signals trigger graceful dispatcher closing and session flush.
 - Fallback prompt is used when context similarity score falls below relevance cutoff.
+
+- PDF text extraction applies unicode normalization (NFC) to handle ligature artifacts.
