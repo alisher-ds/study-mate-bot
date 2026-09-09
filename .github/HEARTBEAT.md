@@ -287,3 +287,5 @@
 - **Audit 2026-09-08.extra.1**: Session monitor check OK.
 
 - **Audit 2026-09-08.extra.2**: Session monitor check OK.
+
+- **Audit 2026-09-09.1**: Telegram webhook sync OK, routine session heartbeat recorded.
