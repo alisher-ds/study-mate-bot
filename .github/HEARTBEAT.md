@@ -317,3 +317,5 @@
 - **Audit 2026-09-15.1**: Telegram session sync OK.
 
 - **Audit 2026-09-15.2**: Telegram session sync OK.
+
+- **Audit 2026-09-15.extra.1**: Memory check normal.
