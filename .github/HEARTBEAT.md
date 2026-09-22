@@ -329,3 +329,5 @@
 - **Audit 2026-09-17.3**: Routine session heartbeat and model inference check OK.
 
 - **Audit 2026-09-17.4**: Routine session heartbeat and model inference check OK.
+
+- **Audit 2026-09-22.1**: Database node session validation OK.
