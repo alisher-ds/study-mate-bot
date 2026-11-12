@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+
 from config import DB_NAME
 
 
@@ -37,6 +38,3 @@ def get_user(user_id: int):
     user = cursor.fetchone()
     conn.close()
     return user
-
-
-init_db()
