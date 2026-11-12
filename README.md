@@ -56,20 +56,48 @@ Any PDF you send is ingested; any other text is treated as a question.
 
 ## Setup
 
-Requires Python 3.10+.
+**Use Python 3.12.** It is the version this project is tested on (locally on Windows and in CI).
+**Python 3.14 is not supported yet:** the pinned `aiogram==3.13.1` needs `aiohttp<3.11`, and that
+release line has no wheel for 3.14 (pip would try to compile it). Other versions are untested.
+
+No C++ compiler is needed: every dependency, including ChromaDB (`chromadb` 1.x, which replaced
+the `chroma-hnswlib` package that had to be compiled), installs from prebuilt wheels. The install
+downloads a lot of data because `sentence-transformers` pulls in PyTorch.
+
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/alisher-ds/study-mate-bot.git
+cd study-mate-bot
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+copy .env.example .env          # then fill in the values
+.venv\Scripts\python.exe bot.py
+```
+
+**Linux / macOS**
 
 ```bash
 git clone https://github.com/alisher-ds/study-mate-bot.git
 cd study-mate-bot
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 cp .env.example .env            # then fill in the values
-python bot.py
+.venv/bin/python bot.py
 ```
+
+If pip asks for "Microsoft Visual C++ 14.0 or greater", you are not on Python 3.12 or you are
+installing an old `chromadb`; check with `.venv\Scripts\python.exe --version`.
 
 The first run downloads the embedding model from Hugging Face, so it needs internet access and
 takes a while.
+
+### Upgrading from an older version
+
+Earlier versions of this project used `chromadb` 0.5.x. Its `chroma_db/` folder is not migrated by
+this project, so after upgrading **delete the `chroma_db/` folder and upload your PDFs again**
+(`users.db` is separate and can stay). The same applies to documents uploaded before the
+token-based chunking was introduced: they keep their old, longer chunks until re-uploaded.
 
 ### Environment variables
 
@@ -124,21 +152,23 @@ button), city, and registration time** in a local SQLite file, `users.db`.
 
 ## Development
 
-```bash
-pip install -r requirements-dev.txt
-ruff check .
-pytest
+```powershell
+# Windows (use .venv/bin/python on Linux/macOS)
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe -m ruff check .
+.venv\Scripts\python.exe -m pytest
 ```
 
-The tests need no API keys, no network and no model download: the embedding model, ChromaDB and Groq
-are replaced by fakes (chunking is tested with a stub tokenizer). They cover chunking (token
-limit, overlap, paragraph and sentence boundaries), chunk-id uniqueness, handler order (commands are
-registered before the free-text handler), PDF upload handling, Groq retry/error handling and the
-prompt structure. CI (`.github/workflows/ci.yml`) runs `ruff` and `pytest` with read-only
-permissions.
+The tests need no API keys, no network and no embedding-model download. The embedding model and
+Groq are replaced by fakes (chunking is tested with a stub tokenizer). ChromaDB is **real** in
+`tests/test_chroma_integration.py`: a temporary directory, hand-made vectors and telemetry turned
+off, covering add/query/get/delete, replacing a re-uploaded file and the `/reset` logic; the other
+tests use an in-memory fake of it. Together they cover chunking (token limit, overlap, paragraph
+and sentence boundaries), chunk-id uniqueness, handler order (commands are registered before the
+free-text handler), PDF upload handling, Groq retry/error handling and the prompt structure. CI
+(`.github/workflows/ci.yml`, Python 3.12) runs `ruff` and `pytest` with read-only permissions.
 
-Not covered by tests: real Telegram, real Groq responses and real ChromaDB/sentence-transformers
-behaviour.
+Not covered by tests: real Telegram, real Groq responses and real sentence-transformers behaviour.
 
 ## License
 
