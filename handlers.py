@@ -95,7 +95,7 @@ async def handle_pdf(message: types.Message):
     try:
         text = extract_text_from_pdf(file_path)
         chunks = split_into_chunks(text)
-        add_document(user_id=message.from_user.id, chunks=chunks, doc_name=doc.file_name)
+        await add_document(user_id=message.from_user.id, chunks=chunks, doc_name=doc.file_name)
         await message.answer(
             f"✅ PDF muvaffaqiyatli yuklandi! ({len(chunks)} ta parcha)\n"
             f"📄 {doc.file_name}\n\nEndi bu fayl bo'yicha savol berishingiz mumkin! 🎯"
@@ -117,8 +117,8 @@ async def handle_question(message: types.Message, state: FSMContext):
     query = message.text.strip()
     await message.answer("🤔 O'ylayapman...")
     try:
-        relevant_chunks = search_relevant_chunks(user_id=message.from_user.id, query=query)
-        answer = generate_answer(query=query, relevant_chunks=relevant_chunks)
+        relevant_chunks = await search_relevant_chunks(user_id=message.from_user.id, query=query)
+        answer = await generate_answer(query=query, relevant_chunks=relevant_chunks)
         await message.answer(answer)
     except Exception as e:
         await message.answer(f"❌ Xatolik yuz berdi: {e}")
@@ -128,7 +128,7 @@ async def handle_question(message: types.Message, state: FSMContext):
 async def cmd_test(message: types.Message):
     await message.answer("⏳ Test tayyorlayapman...")
     try:
-        quiz = generate_quiz(user_id=message.from_user.id)
+        quiz = await generate_quiz(user_id=message.from_user.id)
         await message.answer(quiz)
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
@@ -138,7 +138,7 @@ async def cmd_test(message: types.Message):
 async def cmd_summary(message: types.Message):
     await message.answer("⏳ Xulosa chiqaryapman...")
     try:
-        summary = generate_summary(user_id=message.from_user.id)
+        summary = await generate_summary(user_id=message.from_user.id)
         await message.answer(summary)
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
