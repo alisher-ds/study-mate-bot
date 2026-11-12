@@ -17,11 +17,18 @@ from functools import lru_cache
 import groq
 
 from config import AI_MODEL, GROQ_API_KEY
+from pdf_processor import DEFAULT_OVERLAP_RATIO, split_into_chunks
 
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 CHROMA_PATH = "./chroma_db"
+
+# The model silently truncates input at its own max_seq_length (read from the loaded model, 128
+# for this one). That limit includes the 2 special tokens (<s>, </s>), so chunks keep a small
+# reserve below it: 2 special tokens + a safety margin.
+CHUNK_TOKEN_RESERVE = 10
+CHUNK_OVERLAP_RATIO = DEFAULT_OVERLAP_RATIO
 
 TOP_K = 3
 QUIZ_CHUNKS = 10
@@ -116,6 +123,22 @@ def pick_evenly(items: list, n: int) -> list:
         return [items[len(items) // 2]]
     step = (len(items) - 1) / (n - 1)
     return [items[round(i * step)] for i in range(n)]
+
+
+def _chunk_text_sync(text: str) -> list:
+    model = get_embedding_model()
+    tokenizer = model.tokenizer
+
+    def count_tokens(piece: str) -> int:
+        # verbose=False: no "sequence longer than model max length" warning for long pieces.
+        return len(tokenizer(piece, add_special_tokens=False, verbose=False)["input_ids"])
+
+    return split_into_chunks(
+        text,
+        count_tokens,
+        max_tokens=model.max_seq_length - CHUNK_TOKEN_RESERVE,
+        overlap_ratio=CHUNK_OVERLAP_RATIO,
+    )
 
 
 def _to_lists(vectors) -> list:
@@ -238,6 +261,11 @@ def _reset_sync(user_id: int) -> bool:
 
 
 # --------------------------------------------------------------------------- public API
+
+async def chunk_document(text: str) -> list:
+    """Split text into chunks that fit the embedding model's token limit (with overlap)."""
+    return await asyncio.to_thread(_chunk_text_sync, text)
+
 
 async def add_document(user_id: int, chunks: list, doc_name: str) -> int:
     """Embed and store chunks; returns how many were stored."""
