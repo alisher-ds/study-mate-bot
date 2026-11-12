@@ -1,10 +1,12 @@
-# Lightweight dependencies for running the test suite and linters.
-# The heavy ML packages from requirements.txt (sentence-transformers, chromadb)
-# are imported lazily by rag_engine.py and are mocked in the tests,
-# so they are intentionally not installed here.
+# Dependencies for running the test suite and linters.
+# chromadb is installed because tests/test_chroma_integration.py runs against the real thing
+# (a temporary directory, hand-made vectors). It is a wheel-only install on Windows and Linux.
+# sentence-transformers (and its torch dependency) is imported lazily by rag_engine.py and is
+# faked in the tests, so it is intentionally not installed here.
 aiogram==3.13.1
 python-dotenv==1.0.1
 pypdf==4.3.1
+chromadb==1.5.9
 groq==0.11.0
 httpx==0.27.2  # groq 0.11 breaks with httpx>=0.28 ("proxies" argument removed)
 
