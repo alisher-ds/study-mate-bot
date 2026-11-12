@@ -1,6 +1,7 @@
 """Shared fakes: no network, no model download, no real ChromaDB."""
 import httpx
 import pytest
+from chromadb.errors import NotFoundError
 
 import rag_engine
 
@@ -76,7 +77,7 @@ class FakeChromaClient:
 
     def delete_collection(self, name):
         if name not in self.collections:
-            raise ValueError(f"Collection {name} does not exist.")
+            raise NotFoundError(f"Collection [{name}] does not exist")
         del self.collections[name]
 
 

@@ -253,9 +253,11 @@ def _sample_sync(user_id: int, limit: int) -> list:
 
 
 def _reset_sync(user_id: int) -> bool:
+    from chromadb.errors import NotFoundError
+
     try:
         get_chroma_client().delete_collection(_collection_name(user_id))
-    except ValueError:  # ChromaDB raises ValueError when the collection does not exist
+    except NotFoundError:  # chromadb 1.x raises this (0.5.x raised ValueError) if it is missing
         return False
     return True
 
