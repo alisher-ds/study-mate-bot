@@ -193,3 +193,14 @@ def test_error_text_is_never_leaked_to_the_user(rag, groq_client):
     groq_client.script = [groq.BadRequestError("secret-details", response=http_response(400),
                                                body=None)]
     assert "secret-details" not in run(rag.generate_answer("q", []))
+
+
+def test_real_groq_client_can_be_constructed(monkeypatch):
+    # No network: only checks that the pinned groq/httpx versions are compatible
+    # and that our constructor arguments are accepted (not using the `rag` fixture on
+    # purpose, it replaces get_groq_client).
+    import rag_engine
+
+    monkeypatch.setattr(rag_engine, "GROQ_API_KEY", "dummy-key-for-test")
+    client = rag_engine.get_groq_client.__wrapped__()
+    assert client.max_retries == 0
