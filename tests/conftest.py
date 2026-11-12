@@ -5,9 +5,19 @@ import pytest
 import rag_engine
 
 
+class StubTokenizer:
+    """Offline stand-in for a HF tokenizer: every word costs one token per 3 characters."""
+
+    def __call__(self, text, add_special_tokens=False, verbose=True):
+        ids = [w[i:i + 3] for w in text.split() for i in range(0, len(w), 3)]
+        return {"input_ids": ids}
+
+
 class FakeEmbeddingModel:
     def __init__(self):
         self.calls = []
+        self.max_seq_length = 128
+        self.tokenizer = StubTokenizer()
 
     def encode(self, texts, **kwargs):
         self.calls.append(list(texts))
@@ -95,6 +105,12 @@ def http_response(status: int) -> httpx.Response:
 @pytest.fixture
 def embedder():
     return FakeEmbeddingModel()
+
+
+@pytest.fixture(autouse=True)
+def no_real_embedding_model(monkeypatch):
+    """Safety net: no test may download or load the real sentence-transformers model."""
+    monkeypatch.setattr(rag_engine, "get_embedding_model", lambda: FakeEmbeddingModel())
 
 
 @pytest.fixture

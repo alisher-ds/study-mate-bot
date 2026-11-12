@@ -22,6 +22,37 @@ def prompts(groq_client):
     return messages[0]["content"], messages[1]["content"]
 
 
+def token_count(embedder, text):
+    return len(embedder.tokenizer(text, add_special_tokens=False)["input_ids"])
+
+
+# ---------------------------------------------------------------- chunking
+
+LONG_TEXT = "\n\n".join(
+    " ".join(f"so'z{p}x{i}" for i in range(300)) for p in range(6)  # 300 words per paragraph
+)
+
+
+def test_chunk_document_keeps_chunks_under_the_models_token_limit(rag, embedder):
+    chunks = run(rag.chunk_document(LONG_TEXT))
+
+    limit = embedder.max_seq_length - rag.CHUNK_TOKEN_RESERVE
+    assert len(chunks) > 6  # a 300-word paragraph no longer fits into one chunk
+    assert all(token_count(embedder, c) <= limit for c in chunks)
+
+
+def test_chunk_document_reads_the_limit_from_the_model(rag, embedder):
+    embedder.max_seq_length = 40
+    chunks = run(rag.chunk_document(LONG_TEXT))
+
+    assert all(token_count(embedder, c) <= 40 - rag.CHUNK_TOKEN_RESERVE for c in chunks)
+
+
+def test_chunk_document_gives_nothing_for_empty_text(rag):
+    assert run(rag.chunk_document("")) == []
+    assert run(rag.chunk_document(" \n\n ")) == []
+
+
 # ---------------------------------------------------------------- ids and storage
 
 def test_chunk_ids_are_unique(rag):

@@ -11,9 +11,10 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemo
 from pypdf.errors import PdfReadError
 
 from database import add_user, get_user
-from pdf_processor import extract_text_from_pdf, split_into_chunks
+from pdf_processor import extract_text_from_pdf
 from rag_engine import (
     add_document,
+    chunk_document,
     generate_answer,
     generate_quiz,
     generate_summary,
@@ -149,7 +150,7 @@ async def handle_pdf(message: types.Message):
             await message.bot.download_file(file.file_path, pdf_path)
             text = await asyncio.to_thread(extract_text_from_pdf, pdf_path)
 
-        chunks = split_into_chunks(text)
+        chunks = await chunk_document(text)
         if not chunks:
             await message.answer(
                 "⚠️ Bu PDF dan matn chiqmadi. Ehtimol, bu skanerlangan (rasm ko'rinishidagi) "

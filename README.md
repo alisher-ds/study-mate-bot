@@ -26,8 +26,8 @@ Telegram ──► aiogram Dispatcher ──► handlers.py (commands, PDF uploa
                        ▼                │                       ▼
               pdf_processor.py          │                 rag_engine.py
         pypdf text extraction           │      embed query ─► ChromaDB search (top 3)
-        paragraph-based chunking        │      or sample chunks evenly over the whole document
-        (~300 words per chunk)          │                       │
+        token-based chunking            │      or sample chunks evenly over the whole document
+        (≤118 tokens, ~12% overlap)     │                       │
                        └──────────► rag_engine.add_document     ▼
                           sentence-transformers (one batch)   Groq chat completion
                           ──► ChromaDB  ./chroma_db           (llama-3.3-70b-versatile,
@@ -89,11 +89,20 @@ bot: `users.db` and `chroma_db/` (both git-ignored).
 - **Free Groq limits.** On the free tier you can hit rate limits. The bot retries a few times
   (3 attempts, 30 s timeout each) and then asks the user to try again later.
 - **File size:** at most 20 MB (the Telegram Bot API limit for bot downloads).
-- **Chunk size vs. embedding model:** chunks are about 300 words, but the embedding model reads
-  only a limited number of tokens per text (128 by default), so retrieval mostly "sees" the start
-  of each chunk. Smaller chunks would likely retrieve better; this has not been tuned or measured.
+- **Chunk size follows the embedding model's token limit.** The embedding model
+  (`paraphrase-multilingual-MiniLM-L12-v2`) reads at most 128 tokens per text (`max_seq_length`,
+  read from the loaded model) and silently drops the rest. Chunks are therefore measured in tokens
+  with the model's own tokenizer, not in words: each chunk holds at most **118 tokens** (the limit
+  minus 10 reserved for the 2 special tokens and a safety margin), and consecutive chunks repeat
+  up to **14 tokens (about 12%)** from the end of the previous chunk. Paragraph boundaries are kept
+  where they fit; a longer paragraph is split at sentence boundaries, then by words. Uzbek text
+  costs about 2.1 tokens per word (English about 1.4, measured on a small sample), so a chunk is
+  roughly 45–55 Uzbek or 65–80 English words. Retrieval quality with these settings has not been
+  evaluated. Documents uploaded before this change keep their old, longer chunks until you upload
+  them again.
 - **`/test` and `/xulosa` use a sample.** They send at most 10 (quiz) or 15 (summary) chunks,
-  spread evenly across your documents — not the full text.
+  spread evenly across your documents — not the full text. Because chunks are now short, this
+  covers much less text than before.
 - **No conversation memory.** Each question is answered independently.
 - **No source citations** are guaranteed in answers.
 - Long polling only, single process, no rate limiting of users, no answer-quality evaluation.
@@ -122,7 +131,8 @@ pytest
 ```
 
 The tests need no API keys, no network and no model download: the embedding model, ChromaDB and Groq
-are replaced by fakes. They cover chunking, chunk-id uniqueness, handler order (commands are
+are replaced by fakes (chunking is tested with a stub tokenizer). They cover chunking (token
+limit, overlap, paragraph and sentence boundaries), chunk-id uniqueness, handler order (commands are
 registered before the free-text handler), PDF upload handling, Groq retry/error handling and the
 prompt structure. CI (`.github/workflows/ci.yml`) runs `ruff` and `pytest` with read-only
 permissions.

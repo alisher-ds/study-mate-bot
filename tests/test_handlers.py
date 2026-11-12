@@ -10,6 +10,7 @@ from aiogram.filters import Command
 from aiogram.fsm.storage.base import StorageKey
 
 import handlers
+from tests.conftest import StubTokenizer
 
 CHAT_ID = USER_ID = 7
 
@@ -254,6 +255,18 @@ def test_download_path_ignores_the_user_file_name_and_is_cleaned_up(
     assert os.path.commonpath([path, os.getcwd()]) != os.getcwd()  # not inside the project
     assert not os.path.exists(path)
     assert not os.path.exists(os.path.dirname(path))
+
+
+def test_long_pdf_text_is_stored_as_chunks_within_the_token_limit(
+    dispatcher, bot, sent, pdf_env
+):
+    pdf_env.text = "\n\n".join(" ".join(f"so'z{p}x{i}" for i in range(300)) for p in range(4))
+    feed(dispatcher, bot, make_message(document=document("book.pdf")))
+
+    ((_, chunks, _),) = pdf_env.stored
+    assert len(chunks) > 4
+    tokenizer = StubTokenizer()
+    assert all(len(tokenizer(c)["input_ids"]) <= 128 - 10 for c in chunks)
 
 
 def test_scanned_pdf_gets_a_clear_message_not_zero_chunks(dispatcher, bot, sent, pdf_env):
